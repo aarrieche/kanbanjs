@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<title>Kanban - DI</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+</head>
+<body>
+    <div class="container mt-5">
+      <h1 class="text-center">Kanban - Design de Interação</h1>
+      <h2 class="text-center">Alexandre Arrieche</h2>
+      <div class="row mt-5">
+        <div class="col">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+                
+              <h4>Projeto</h4>
+            </div>
+            <div class="card-body">
+              <form id="projeto-form">
+                <div class="form-group">
+                  <label for="projeto-atividade">Atividade:</label>
+                  <input type="text" class="form-control" id="projeto-atividade" required>
+                </div>
+                <div class="form-group">
+                  <label for="projeto-responsavel">Responsável:</label>
+                  <input type="text" class="form-control" id="projeto-responsavel" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Adicionar</button>
+              </form>
+              <div id="projeto-lista"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-header bg-info text-white">
+              <h4>Implementação</h4>
+            </div>
+            <div class="card-body">
+              <div id="implementacao-lista"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-header bg-warning text-white">
+              <h4>Homologação</h4>
+            </div>
+            <div class="card-body">
+              <div id="homologacao-lista"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-header bg-success text-white">
+              <h4>Concluída</h4>
+            </div>
+            <div class="card-body">
+              <div id="concluida-lista"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script> </script>
+
+	<script>
+
+        
+class Fase {
+  constructor(nome, lista, proximaFase = null, faseAnterior = null) {
+    this.nome = nome;
+    this.lista = lista;
+    this.faseAnterior = faseAnterior;
+    this.proximaFase = proximaFase;
+  }
+
+  moverAtividadeParaProximaFase(index) {
+    const atividade = { ...this.lista[index] };
+    this.lista.splice(index, 1);
+    this.salvarLocalStorage();
+    this.atualizarTela();
+
+    if (this.proximaFase) {
+      this.proximaFase.adicionarAtividade(
+        atividade.atividade,
+        atividade.responsavel,
+        this.proximaFase.nome
+      );
+    }
+  }
+
+  moverAtividadeParaFaseAnterior(index) {
+    const atividade = { ...this.lista[index] };
+    this.lista.splice(index, 1);
+    this.salvarLocalStorage();
+    this.atualizarTela();
+
+    if (this.faseAnterior) {
+      this.faseAnterior.adicionarAtividade(
+        atividade.atividade,
+        atividade.responsavel
+      );
+    }
+  }
+
+  adicionarAtividade(atividade, responsavel) {
+    let novaAtividade = {
+      atividade: atividade,
+      responsavel: responsavel,
+    };
+    this.lista.push(novaAtividade);
+    this.salvarLocalStorage();
+    this.atualizarTela();
+  }
+
+  removerAtividade(index) {
+    this.lista.splice(index, 1);
+    this.salvarLocalStorage();
+    this.atualizarTela();
+  }
+
+
+  
+  atualizarTela() {
+  let htmlLista = '';
+  for (let i = 0; i < this.lista.length; i++) {
+
+    htmlLista += '<div class="card mb-3">';
+    htmlLista += '<div class="card-body">';
+    htmlLista += '<h5 class="card-title">' + this.lista[i].atividade + '</h5>';
+    htmlLista += '<h6 class="card-subtitle mb-2 text-muted">' + this.lista[i].responsavel + '</h6>';
+    htmlLista += '<button type="button" class="btn btn-danger btn-sm" onclick="' + this.nome + '.removerAtividade(' + i + ')">Remover</button>';
+    if (this.nome === 'homologacao') {
+      htmlLista += '<button type="button" class="btn btn-success btn-sm" onclick="' + this.nome + '.moverAtividadeParaProximaFase(' + i + ')">' + ('Concluir') + '</button>';
+    } else {
+      if (this.nome !== 'concluida') {
+        htmlLista += '<button type="button" class="btn btn-primary btn-sm" onclick="' + this.nome + '.moverAtividadeParaProximaFase(' + i + ')">Próxima</button>';
+      }
+    }
+    if (this.nome !== 'projeto') {
+    htmlLista += '<button type="button" class="btn btn-secondary btn-sm" onclick="' + this.nome + '.moverAtividadeParaFaseAnterior(' + i + ')">Anterior</button>';
+    }
+    htmlLista += '</div>';
+    htmlLista += '</div>';
+  }
+  let listaElemento = document.getElementById(this.nome + '-lista');
+  listaElemento.innerHTML = htmlLista;
+}
+
+
+salvarLocalStorage() {
+  localStorage.setItem(this.nome, JSON.stringify(this.lista));
+}
+
+recuperarLocalStorage() {
+  let lista = JSON.parse(localStorage.getItem(this.nome));
+  if (lista) {
+    this.lista = lista;
+    this.atualizarTela();
+  }
+}
+}
+
+
+let concluida = new Fase('concluida', []);
+concluida.recuperarLocalStorage();
+
+let homologacao = new Fase('homologacao', []);
+homologacao.recuperarLocalStorage();
+
+let implementacao = new Fase('implementacao', []);
+implementacao.recuperarLocalStorage();
+
+let projeto = new Fase('projeto', []);
+projeto.recuperarLocalStorage();
+
+projeto.proximaFase = implementacao;
+implementacao.faseAnterior = projeto;
+implementacao.proximaFase = homologacao;
+homologacao.faseAnterior = implementacao;
+homologacao.proximaFase = concluida;
+concluida.faseAnterior = homologacao;
+
+document.getElementById('projeto-form').addEventListener('submit', function(event) {
+  event.preventDefault();
+  let atividade = document.getElementById('projeto-atividade').value;
+  let responsavel = document.getElementById('projeto-responsavel').value;
+  projeto.adicionarAtividade(atividade, responsavel);
+  document.getElementById('projeto-form').reset();
+});
+
+</script>
+</body>
+</html>
+
